@@ -6,3 +6,5 @@ typora-copy-images-to: img
 
 
 
+![256x256a](../../resource_textures/Texture/256x256a.png)
+
