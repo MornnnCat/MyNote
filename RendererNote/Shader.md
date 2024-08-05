@@ -831,3 +831,164 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 在Direct3D12中，可以通过ID3D12GraphicsCommandList::Dispatch(gX,gY,gZ)方法创建gX*gY*gZ个线程组。注意顺序，先numthreads定义好每个核函数对应线程组里线程的数量（tX*tY*tZ），再用Dispatch定义用多少线程组(gX*gY*gZ)来处理这个核函数。
 
 ![image-20240805115343639](img/image-20240805115343639.png)
+
+
+
+
+
+#### 着色器变体
+
+为什么使用变体？
+
+使用Shader变体的意义在于优化和灵活性。Shader变体是在不同平台、不同硬件和不同配置下的Shader的不同版本、不同效果，我们希望通过少量的shader文件实现不同的效果。通过使用Shader变体，可以根据运行平台的不同，选择最适合的Shader版本，以提高性能和兼容性。
+
+使用Shader变体可以根据硬件的不同，选择合适的渲染路径和特性。例如，在移动设备上，可以选择使用较低的分辨率、减少复杂度的Shader变体，以提高性能和节省电量。而在高性能PC上，可以选择使用更高质量的Shader变体，以获得更好的视觉效果。
+
+此外，使用Shader变体还可以根据不同的配置需求，进行定制化的渲染。例如，在不同的光照条件下，可以选择使用不同的Shader变体来处理阴影效果。通过使用Shader变体，可以灵活地适应不同的场景需求，提供更好的渲染效果。
+
+**静态分支：#if**
+
+![静态分支](img/静态分支.png)
+
+
+
+**2.变体分支**
+
+![变体分支](img/变体分支.png)
+
+1. 定义方式
+
+  定义方式中值得注意的是，#pragma shader_feature A其实是 #pragma shader_feature _ A的简写，下划线表示未定义宏(nokeyword)。因此此时shader其实对应了两个变体，一个是nokeyword，一个是定义了宏A的。
+
+  而#pragma multi_compile A并不存在简写这一说，所以shader此时只对应A这个变体。若要表示未定义任何变体，则应写为 #pragma multi_compile _ A。
+
+
+
+2. 宏的适用范围
+
+  两种定义方式可以使用在任何shader中，只是各自有一些建议使用情况。
+
+  multi_compile定义的宏，如#pragma multi_compile_fog，#pragma multi_compile_fwdbase等，基本上适用于大部分shader，与shader自身所带的属性无关。
+
+  shader_feature定义的宏多用于针对shader自身的属性。比如shader中有_NormalMap这个属性(Property)，便可通过#pragma shader_feature _NormalMap来定义宏，用来实现这个shader在material有无_NormalMap时可进行不同的处理。
+
+
+
+3. 变体的生成
+
+  multi_compile会默认生成所有的变体，因此应当谨慎适用multi_compile，否则将会导致变体数量激增。如： #pragma multi_compile A B C #pragma multi_compile D E
+
+  则此时会生成 A D、A E、B D、B E、C D、C E这6中变体。
+
+  shader_feature要生成何种变体可用shader variant collection进行自定义设置。
+
+ 
+
+4. 变体的debug
+
+shader变体的缺失可能并不会导致Editor中效果显示异常，但打
+
+包后则可能出现黑片或紫片，因此需要特殊方法来测试。
+
+方法一：在editor模式下frameDebug 查看正常的表现shader的属性和使用编译情况（查看编译后的变体代码Show generated code）；
+
+方法二：真机连接frameDebug调试核查表现失常的shader的属性中是否缺失属性例如：是谁偷走了我的lightmap？？ 没能切换使用正确的shaderVariant。
+
+解决问题：首先确定 shaderVariant是否打包进去了（用bundle拆解工具 AssetStudio核查bundle内的信息），第二是否执行命令“切换到lightmap_on的shaderVariant”
+
+(AssetStudio，软件在unity包文件夹)
+
+ 
+
+
+
+## 具体效果
+
+### 基础效果
+
+#### 视差映射
+
+
+
+
+
+#### 三向映射
+
+
+
+
+
+#### 广告牌
+
+
+
+
+
+#### 卡通水
+
+
+
+
+
+#### 模板测试
+
+
+
+
+
+
+
+### URP RenderFeature
+
+#### 体积云
+
+
+
+
+
+#### 屏幕空间反射
+
+
+
+
+
+#### 降噪算法
+
+##### 时域降噪
+
+
+
+##### 填补降噪
+
+
+
+
+
+#### 抗锯齿算法
+
+##### 时域抗锯齿
+
+
+
+##### 快速抗锯齿
+
+
+
+##### 多重采样抗锯齿
+
+
+
+#### 体积光
+
+
+
+
+
+#### 视锥体裁切
+
+
+
+
+
+#### 毛星云-X-PostProcessing系统
+
