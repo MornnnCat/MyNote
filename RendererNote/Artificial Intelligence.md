@@ -2,7 +2,7 @@
 typora-copy-images-to: img
 ---
 
-# 绘画模型
+# 图像模型
 
 ## Stable Diffusion
 
@@ -16,7 +16,7 @@ typora-copy-images-to: img
 
 
 
-
+Deep-Live-Cam
 
 # 音像模型
 
