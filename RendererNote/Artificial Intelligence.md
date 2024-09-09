@@ -8,6 +8,14 @@ typora-copy-images-to: img
 
 
 
+### ControlNet
+
+可以决定骨骼动作
+
+
+
+
+
 
 
 ## ComfyUI
@@ -28,9 +36,14 @@ Deep-Live-Cam
 
 
 
-
+#注意显存，虚拟显存状态下，训练过程将极其缓慢。
 
 
 
 # 语言模型
 
+
+
+## Chat GPT
+
+API：
