@@ -1,0 +1,135 @@
+#pragma kernel CSMain
+
+struct CBuffer
+{
+    float3 pos;
+    float4 col;
+};
+
+AppendStructuredBuffer<CBuffer> _CBuffer;// 存储未被剔除的物体的顶点颜色信息
+Texture2D<float4> _HizDepthTex;          // 存储层次化深度信息
+float2 _DepthTexSize;                    // 层次化深度纹理大小
+
+float _Num;// 场景物体数量
+float _Size;// 一次线程处理的物体数量
+
+// 视锥体的六平面
+float4 p_left;
+float4 p_right;
+float4 p_top;
+float4 p_down;
+float4 p_forwad;
+float4 p_back;
+
+float4x4 mat_VP;// VP矩阵，视图空间到投影空间的转换矩阵
+float4 p_point;// 相机位置
+int mipmapLevel;// 层次化深度纹理的mipmap等级
+
+// 根据线程ID计算索引
+uint GetIndex(uint3 id)
+{
+    float3 numthreads = float3(8,8,1);
+    float3 dispatch = float3(8,8,1);
+
+    uint index = id.x + 
+    id.y * dispatch.x * numthreads.x + 
+    id.z * dispatch.x * numthreads.x * dispatch.y * numthreads.y;
+    return index;
+}
+
+bool CullingWithPlane(float3 center , float3 raydir,float3 pos)
+{
+    // center.y += 0.5;
+    float3 size = float3(1,1,1) * 0.5;
+    float3 ldb = center - size;
+    float3 ldf = center - float3(size.x,size.y,-size.z);
+    float3 lub = center - float3(size.x,-size.y,size.z);
+    float3 luf = center - float3(size.x,-size.y,-size.z);
+    float3 ruf = center + size;
+    float3 rub = center + float3(size.x,size.y,-size.z);
+    float3 rdf = center + float3(size.x,-size.y,size.z);
+    float3 rdb = center + float3(size.x,-size.y,-size.z);
+
+    float dir =  dot(normalize(ldb - pos),raydir);
+    float dir1 = dot(normalize(ldf - pos),raydir);
+    float dir2 = dot(normalize(lub - pos),raydir);
+    float dir3 = dot(normalize(luf - pos),raydir);
+    float dir4 = dot(normalize(ruf - pos),raydir);
+    float dir5 = dot(normalize(rub - pos),raydir);
+    float dir6 = dot(normalize(rdf - pos),raydir);
+    float dir7 = dot(normalize(rdb - pos),raydir);
+
+    if(dir>0&&dir1>0&&dir2>0&&dir3>0&&dir4>0&&dir5>0&&dir6>0&&dir7>0)  return true;
+    return false;
+}
+
+bool CullingWithPlane(float3 pos)
+{
+    return
+    CullingWithPlane(pos,p_left,p_point )||
+    CullingWithPlane(pos,p_right,p_point)||
+    CullingWithPlane(pos,p_top,p_point)  ||
+    CullingWithPlane(pos,p_down,p_point) ||
+    CullingWithPlane(pos,p_forwad,p_point + p_forwad * p_forwad.w)||
+    CullingWithPlane(pos,p_back,p_point + p_forwad  *p_back.w);
+}
+
+bool CullingWithCilpPos(float3 pos)
+{
+    float4 clipPos = mul(mat_VP,float4(pos,1));
+    float m = max(abs(clipPos.x),abs(clipPos.y));
+    m = max(m,abs(clipPos.z));
+    return (m>clipPos.w);
+}
+
+bool CullingWithHiz(float3 pos)
+{
+    //应计算包围盒所咱屏幕像素来计算 简化操作只使用原点计算
+    float4 clipSpace = mul(mat_VP, float4(pos,1));
+    float3 ndc = clipSpace.xyz / clipSpace.w;
+    float2 uvLeftBottom = ndc.xy * 0.5 +0.5;
+    float depth = ndc.z;
+    float2 pixel = _DepthTexSize / pow(2,mipmapLevel);
+    uint2 pixelLeftBottom = uvLeftBottom * pixel;
+    int2 nowUV = int2 (pixelLeftBottom.x,pixelLeftBottom.y);
+    float depthTex = _HizDepthTex.mips[mipmapLevel][nowUV.xy].r;
+    if(depth<=depthTex) return false;
+    return true;
+}
+// log2 (128 / 显示区域尺寸) = mipmap 等级。
+
+
+[numthreads(8,8,1)]
+void CSMain (uint3 tid : SV_DispatchThreadID)
+{
+    uint id = GetIndex(tid);
+    for(int index = 0;_Size>index;index++)
+    {
+        uint i = index + id * _Size;
+        if(i<_Num)
+        {
+            CBuffer cb;
+            float3 pos = 0;
+            pos.x = (i % 20) * 1.5;
+            pos.y = ((i/20)%20)* 1.5;
+            pos.z = (i/400)* 1.5;
+            cb.pos = pos;
+            cb.col = float4(1,1,1,1);
+
+            // 先判断是否在视锥体内
+            if(CullingWithCilpPos(pos))
+            {
+                return;
+            }
+
+            // 再判断是否被遮挡
+            if(CullingWithHiz(pos))
+            {
+                return;
+            }
+            // 如果通过了全部测试，则添加到缓冲区
+            _CBuffer.Append(cb);
+        }
+    }
+
+}
