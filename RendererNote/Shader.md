@@ -921,6 +921,8 @@ shader变体的缺失可能并不会导致Editor中效果显示异常，但打
 
 #### 视差映射
 
+<video src="video/视差映射.mp4"></video>
+
 
 
 
@@ -1026,6 +1028,16 @@ RenderFeature是属于渲染管线的一部分，基于其封装性，很难用�
 视锥体剔除基于计算着色器实现，具体代码如下文件：
 
  [ViewFrustumCulling.compute](code\CSCull\ViewFrustumCulling.compute) 
+
+#### 可编辑GPU草地
+
+技术点：视锥体裁切、通过RT绘制生成Texture2D、通过Texture2D的颜色深浅生成草
+
+
+
+#### 视差映射雪地交互
+
+技术点：视差映射、RT高度贴图、雪地光影
 
 
 
