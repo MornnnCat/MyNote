@@ -1027,19 +1027,112 @@ RenderFeature是属于渲染管线的一部分，基于其封装性，很难用�
 
  [ViewFrustumCulling.compute](code\CSCull\ViewFrustumCulling.compute) 
 
-#### 可编辑GPU草地
+#### 可编辑GPU草地（渲染部分）
 
-技术点：视锥体裁切、通过RT绘制生成Texture2D、通过Texture2D的颜色深浅生成草
+*脚本部分详见[UnityC#.md](UnityC#.md)的AABB裁切、序列化内容
 
+##### GPU裁切
 
+经过AABB裁切后草地性能已经非常不错了，但仍然存在一些多余的渲染，但CPU已经不足以支持再高精度的裁剪工作了，如果想进行更高精度的剔除则需要使用compute shader，把计算交给并行能力更强大的GPU去计算，遍历每棵草，判断它是否在我们的视线范围内。
 
-1.编辑模式
+compute shader要进行的裁切分为两部分：视锥体裁切、遮挡剔除裁切
 
-每次绘制更新缓冲区，提供一个“Apply”按钮，切换至固定模式
+1. 视锥体裁切
 
-2.固定模式
+   
 
-保存成图片文件，用固定逻辑
+2. 遮挡剔除裁切
+
+##### 草地着色器
+
+1. GPU实例化buffer读取
+
+2. 空间坐标计算
+
+   
+
+3. 多光源渲染：
+
+   下文是URP的Light.hlsl文件中用于计算Forward Add光的代码片段，和build-in不同的是，前向渲染的额外光照不再需要写进第二个Pass里了。
+
+   概括来说的话，代码中首先使用GetAdditionalLightsCount获取片元额外光的数量，LIGHT_LOOP_BEGIN……LIGHT_LOOP_END遍历每个额外光，GetAdditionalLight获取额外光对象，并将光加进片元中。
+
+   ```glsl
+   #if defined(_ADDITIONAL_LIGHTS)
+       uint pixelLightCount = GetAdditionalLightsCount();
+   
+       #if USE_FORWARD_PLUS
+       for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+       {
+           FORWARD_PLUS_SUBTRACTIVE_LIGHT_CHECK
+   
+           Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+   
+   #ifdef _LIGHT_LAYERS
+           if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+   #endif
+           {
+               lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                             inputData.normalWS, inputData.viewDirectionWS,
+                                                                             surfaceData.clearCoatMask, specularHighlightsOff);
+           }
+       }
+       #endif
+   
+       LIGHT_LOOP_BEGIN(pixelLightCount)
+           Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+   
+   #ifdef _LIGHT_LAYERS
+           if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+   #endif
+           {
+               lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                             inputData.normalWS, inputData.viewDirectionWS,
+                                                                             surfaceData.clearCoatMask, specularHighlightsOff);
+           }
+       LIGHT_LOOP_END
+       #endif
+   ```
+
+   我预想按照这个大致流程给GPU实例化草地加入额外光照即可，但实际因为GPU实例化的特殊性，渲染管线无法知道具体的每棵草是否受到额外的光，即USE_FORWARD_PLUS这个宏是否开启，可以看到下文中如果USE_FORWARD_PLUS未开启，那GetAdditionalLight和GetAdditionalLightsCount就无法输出正确的数据：
+
+   ```glsl
+   int GetAdditionalLightsCount()
+   {
+   #if USE_FORWARD_PLUS
+       return 0;
+   #else
+       return int(min(_AdditionalLightsCount.x, unity_LightData.y));
+   #endif
+   }
+   ```
+
+   ```glsl
+   Light GetAdditionalLight(uint i, float3 positionWS)
+   {
+   #if USE_FORWARD_PLUS
+       int lightIndex = i;
+   #else
+       int lightIndex = GetPerObjectLightIndex(i);
+   #endif
+       return GetAdditionalPerObjectLight(lightIndex, positionWS);
+   }
+   ```
+
+   还有一个不能忽略的点是GetAdditionalLightsCount中的unity_LightData.y也不是正确的数字，gpu实例草中的位置信息管线本身是不知道的，因此这个值可以替换成我们自定的一个数字或者让脚本计算额外光数量_AddLightCount，避免额外光数量一直识别为0，也避免shader中额外光的遍历循环产生过多空转：
+
+   ```glsl
+   #if _ADDITIONAL_LIGHTS
+       uint pixelLightCount = int(min(_AdditionalLightsCount.x, _AddLightCount));
+       half3 viewDir = normalize(_WorldSpaceCameraPos - input.positionWS);
+   LIGHT_LOOP_BEGIN(pixelLightCount)
+       Light light = GetAdditionalPerObjectLight(lightIndex, input.positionWS);
+       color.rgb += ApplySingleDirectLight(light, normalWS, viewDir, diffuseColor.xyz, input.positionOS.y);
+   LIGHT_LOOP_END
+   #endif
+   ```
+
+   
 
 
 
