@@ -17,7 +17,7 @@ Update方法必须使用单帧调试：启动调试->运行场景 暂停->加断
 性能测试：
 
 ```c#
-cProfiler.BeginSample("performance test");
+Profiler.BeginSample("performance test");
 ……
 Profiler.EndSample();
 ```

@@ -923,6 +923,53 @@ shader变体的缺失可能并不会导致Editor中效果显示异常，但打
 
 <video src="video/视差映射.mp4"></video>
 
+视差映射的核心思想是通过高度值，对目标像素进行高度位置计算与可见性测试
+
+##### 1. Basic Parallax Mapping
+
+最基础最简单的视差映射，将计算放在世界空间中计算，parallaxUV中计算偏移后的位置。
+
+```glsl
+float2 ParallaxMapping(float height, float2 uv, float3 viewDirTS, float2 offsetScale)
+{
+    height += offsetScale.x;
+    height *= offsetScale.y;
+    float2 parallaxUV = uv + height * viewDirTS.xy * rcp(viewDirTS.z);
+    return parallaxUV;
+}
+half4 frag (v2f i) : SV_Target
+{
+    float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, i.uv).z;
+    float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.positionWS);
+    float3 bitangent = i.tangentWS.w * cross(i.normalWS.xyz, i.tangentWS.xyz);
+    float3x3 TBN = float3x3(i.tangentWS.xyz, bitangent.xyz, i.normalWS.xyz);
+    
+    float3 viewDirTS = TransformWorldToTangentDir(viewDirWS, TBN, true);
+    float2 uv = ParallaxMapping(height, i.uv, viewDirTS, float2(_HeightOffset, _HeightScale));
+    
+    half4 col = tex2D(_MainTex, uv);
+    return col;
+}
+```
+
+
+
+优点：快捷简单性能好。
+
+缺点：在掠角会失效，只能进行极小的便宜，偏移越大走样越严重，不能细看。
+
+
+
+**Offset Limit Parallax Mapping**
+
+为了改善掠角问题，Welsh提出了Offset Limit方案，限制偏移值的大小，即删掉“rcp(viewDirTS.z)”。
+
+
+
+##### 2. Ray tracing Parallax Mapping
+
+
+
 
 
 #### 三向映射
@@ -954,6 +1001,12 @@ shader变体的缺失可能并不会导致Editor中效果显示异常，但打
 ### URP RenderFeature
 
 RenderFeature是属于渲染管线的一部分，基于其封装性，很难用其他继承的脚本去访问和控制，即使能访问到也会对其产生一些破坏，不建议访问。
+
+
+
+#### Bloom
+
+
 
 #### 体积云
 
