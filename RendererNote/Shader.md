@@ -1000,9 +1000,67 @@ half4 frag (v2f i) : SV_Target
 
 
 
-### URP RenderFeature
+### **URP RenderFeature**
 
 RenderFeature是属于渲染管线的一部分，基于其封装性，很难用其他继承的脚本去访问和控制，即使能访问到也会对其产生一些破坏，不建议访问。
+
+*Tips：文档和网络资料的缺失导致很多东西需要使用经验主义去应对
+
+1. 在这个用于Debug的Render Feature后处理中，我们将这个Feature注入到透明物体渲染结束的阶段，可以看到场景中的这个Sprite物体渲染时机在我们的Debug Feature之前，但我们的Render Feature抓取到的图像中还没有渲染这张图像，这特么太奇怪了！
+
+<img src="./img/PixPin_2024-12-06_15-02-31.png" alt="PixPin_2024-12-06_15-02-31" style="zoom: 80%;" />
+
+上图为截帧中Sprite对象渲染的时机
+
+<img src="./img/PixPin_2024-12-06_15-03-02.png" alt="PixPin_2024-12-06_15-03-02" style="zoom:80%;" />
+
+上图为截帧中Debug Render Feature渲染的时机
+
+解决方法：把Sprite物体改为无光照Shader的Quad，只能这样了，各种办法都试过了都不行，我也很绝望。
+
+
+
+#### Blitter类解析
+
+*本文章基于URP14.0（unity不写文档，只能自己看）
+
+Blitter是Unity SRP渲染管线的底层渲染工具，并且性能优于原先的Blit类，主要负责纹理渲染方面，包括：屏幕后处理、纹理、渲染纹理
+
+1. BlitShaderIDs类：存储Shader全局属性的ID；
+
+2. Initialize方法：对Blitter类进行初始化，会在渲染管线初始化时运行；
+
+3. Cleanup方法：释放Blitter类的资源，会在渲染管线释放时运行；
+
+4. BlitTexture方法：这是该类的核心功能之一，用于进行高效的纹理blit（位块传送）操作，主要用于后处理、自定义管线等操作。
+
+   ```c#
+   CommandBuffer cmd; //命令缓冲区，方法内需要将一些渲染指令写入该缓冲区
+   RenderTargetIdentifier source; //指向源RenderTexture的ID
+   RenderTargetIdentifier destination; //指向目标RenderTexture的ID
+   RTHandle source; //源RenderTexture的句柄，代替曾经RenderTexture类型的作用，性能比之更好
+   RenderBufferLoadAction loadAction; //颜色和深度/模板缓冲区的加载操作
+   RenderBufferStoreAction storeAction; //颜色和深度/模板缓冲区的存储操作
+   Vector4 scaleBias; //纹理的缩放偏移值
+   float mipLevel; //Mipmap等级
+   bool bilinear; //是否线性插值
+   Material material; //blit（位块传送）时使用的Shader
+   int pass; //要运行material的shader的Pass的索引
+   ```
+
+5. BlitCameraTexture方法：进一步封装后的BlitTexture方法
+
+```c#
+CommandBuffer cmd; //同上
+RTHandle source; //同上
+RTHandle destination; //目标RenderTexture的句柄
+Rect destViewport; //视口大小数据
+…………
+```
+
+
+
+
 
 
 
