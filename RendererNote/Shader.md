@@ -952,7 +952,7 @@ half4 frag (v2f i) : SV_Target
 }
 ```
 
-
+![image-20241210143436985](./img/image-20241210143436985.png)
 
 优点：快捷简单性能好。
 
@@ -966,11 +966,102 @@ half4 frag (v2f i) : SV_Target
 
 
 
-##### 2. Ray tracing Parallax Mapping
+##### 2. Ray marching Parallax Mapping
+
+光线步进视差映射
+
+<img src="./img/v2-83f9d80c73ab03d2bb939a35ac60d59a_1440w.jpg" alt="v2-83f9d80c73ab03d2bb939a35ac60d59a_1440w" style="zoom:30%;" />
+
+在对光线步进算法进行优化之前，我们先用最原始的固定步长进行迭代计算
+
+值得一说的是本代码中使用了一个简单有效的优化技巧：根据dot(n,v)决定步长，可以让视觉焦点以外的地方减少步进数量，优化性能。
+
+```glsl
+float2 SteepParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), float2 inddx, float2 inddy, int channel, float2 uv, float3 viewDirTS, float2 offsetScale, float slicesMin, float slicesMax)
+{
+    int slicesNum = ceil(lerp(slicesMax, slicesMin, abs(dot(float3(0, 0, 1), viewDirTS))));// 步数
+    float deltaHeight = rcp(slicesNum);// 步长高度
+    float2 deltaUV = offsetScale.y * viewDirTS.xy * rcp(viewDirTS.z * slicesNum);// 每次步进的UV偏移量
+    float2 currUVOffset = -deltaUV;
+    float currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    float rayHeight = 1.0 - deltaHeight;
+
+    for (int i = 0; i < slicesNum; i++)
+    {
+        if (currHeight > rayHeight)
+            break;
+        rayHeight -= deltaHeight;
+        currUVOffset -= deltaUV;
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    }
+    float2 parallaxUV = uv + currUVOffset;
+    return parallaxUV;
+}
+```
+
+![image-20241210143517623](./img/image-20241210143517623.png)
+
+优点：效果很棒
+
+缺点：消耗很高，而且步进次数稍低一点就会产生分层纹路
+
+
+
+##### 3. Parallax Occlusion Mapping (POM)
+
+这个算法是对光线步进视差映射的优化
+
+优化前（Max:50 Min:20）：
+
+![image-20241211165112220](./img/image-20241211165112220.png)
+
+优化后（Max:50 Min:20）：
+
+![image-20241211165013360](./img/image-20241211165013360.png)
 
 
 
 
+
+```glsl
+float2 OcclusionParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), float2 inddx,
+    float2 inddy, int channel, float2 uv, float3 viewDirTS, float2 offsetScale, float slicesMin, float slicesMax)
+{
+    int slicesNum = ceil(lerp(slicesMax, slicesMin, abs(dot(float3(0, 0, 1), viewDirTS))));
+    float deltaHeight = offsetScale.x * rcp(slicesNum);
+    float2 deltaUV = offsetScale.y * viewDirTS.xy * rcp(viewDirTS.z * slicesNum);
+    float prevHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv, inddx, inddy)[channel];// 算法优化中，加入上一次步进的高度值
+    float2 currUVOffset = -deltaUV;
+    float currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    float rayHeight = 1.0 - deltaHeight;
+    
+    for (int i = 0; i < slicesNum; i++)
+    {
+        if (currHeight > rayHeight)
+            break;
+        prevHeight = currHeight;// 记录步进前的位置
+        rayHeight -= deltaHeight;
+        currUVOffset -= deltaUV;
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    }
+    float currDeltaHeight = currHeight - rayHeight;// 计算出误差值
+    float prevDeltaHeight = rayHeight + deltaHeight - prevHeight;
+    float weight = currDeltaHeight / (currDeltaHeight + prevDeltaHeight);
+    float2 parallaxUV = (uv + currUVOffset) + weight * deltaUV;
+    return parallaxUV;
+}
+```
+
+
+
+#### 故障效果
+
+1. 色调分离
+2. 像素偏移
+3. CRT扫描线
+4. UV偏移
+5. 随机色块
+6. 随机噪点
 
 
 
