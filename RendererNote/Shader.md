@@ -1009,7 +1009,7 @@ float2 SteepParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), float
 
 ##### 3. Parallax Occlusion Mapping (POM)
 
-这个算法是对光线步进视差映射的优化
+这个算法是对光线步进视差映射的优化，它在结果计算中考虑了上次步进得到的结果，减淡了一些斜面的条纹
 
 优化前（Max:50 Min:20）：
 
@@ -1030,7 +1030,7 @@ float2 OcclusionParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), f
     int slicesNum = ceil(lerp(slicesMax, slicesMin, abs(dot(float3(0, 0, 1), viewDirTS))));
     float deltaHeight = offsetScale.x * rcp(slicesNum);
     float2 deltaUV = offsetScale.y * viewDirTS.xy * rcp(viewDirTS.z * slicesNum);
-    float prevHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv, inddx, inddy)[channel];// 算法优化中，加入上一次步进的高度值
+    float prevHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv, inddx, inddy)[channel];// 算法优化中，记录上一次步进的高度值
     float2 currUVOffset = -deltaUV;
     float currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
     float rayHeight = 1.0 - deltaHeight;
@@ -1045,12 +1045,148 @@ float2 OcclusionParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), f
         currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
     }
     float currDeltaHeight = currHeight - rayHeight;// 计算出误差值
-    float prevDeltaHeight = rayHeight + deltaHeight - prevHeight;
-    float weight = currDeltaHeight / (currDeltaHeight + prevDeltaHeight);
-    float2 parallaxUV = (uv + currUVOffset) + weight * deltaUV;
+    float prevDeltaHeight = rayHeight + deltaHeight - prevHeight;//上一次步进的高度值
+    float weight = currDeltaHeight / (currDeltaHeight + prevDeltaHeight);//当前步进的变化值所占上一步进+当前步进的比重
+    float2 parallaxUV = (uv + currUVOffset) + weight * deltaUV;//根据比重再做一次偏移，让斜面渲染效果更丝滑
     return parallaxUV;
 }
 ```
+
+##### 4. Relief Parallax Mapping
+
+即便大幅度下调步进次数，已经几乎看不到斜面的步进条纹了。原理是在线性搜索结束后，再使用二分搜索进一步逼近精确值，二分搜索仅进行五次迭代，但数值精确度确大幅提升。
+
+性能方面会比POM高一点点，但效果大幅度提升
+
+Max:20 Min:10
+
+<img src="./img/image-20241220115502631.png" alt="image-20241220115502631" style="zoom:67%;" />
+
+```glsl
+float2 ReliefParallaxMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), float2 inddx,
+    float2 inddy, int channel, float2 uv, float3 viewDirTS, float2 offsetScale, float slicesMin, float slicesMax)
+{
+    // The number of slices depends on VdotN (view angle smaller, slices smaller).
+    int slicesNum = ceil(lerp(slicesMax, slicesMin, abs(dot(float3(0, 0, 1), viewDirTS))));
+    float deltaHeight = 1.0 * rcp(slicesNum);
+    float2 deltaUV = offsetScale.y * viewDirTS.xy * rcp(viewDirTS.z * slicesNum);
+    
+    float2 currUVOffset = -deltaUV;
+    float currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    float rayHeight = 1.0 - deltaHeight;
+    
+    // Linear search
+    for (int sliceIndex = 0; sliceIndex < slicesNum; sliceIndex++)
+    {
+        if (currHeight > rayHeight)
+            break;
+        rayHeight -= deltaHeight;
+        currUVOffset -= deltaUV;
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    }
+    // Binary search
+    float2 halfDeltaUV = deltaUV * 0.5;
+    float halfDeltaHeight = deltaHeight * 0.5;
+    // Backward
+    rayHeight += halfDeltaHeight;
+    currUVOffset += halfDeltaUV;
+    for(int i = 0; i < 5; i++)
+    {
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+        
+        halfDeltaUV *= 0.5;
+        halfDeltaHeight *= 0.5;
+        float delta = currHeight - rayHeight;
+        if (abs(delta) <= 0.01)
+            break;
+        if(delta > 0)
+        {
+            // Backward
+            rayHeight += halfDeltaHeight;
+            currUVOffset += halfDeltaUV;
+        }
+        else
+        {
+            // Forward
+            rayHeight -= halfDeltaHeight;
+            currUVOffset -= halfDeltaUV;
+        }
+    }
+    
+    float2 parallaxUV = uv + currUVOffset;
+    return parallaxUV;
+}
+```
+
+##### 5. Secant Method Relief Mapping
+
+效果和Relief几乎不相上下，但性能比Relief好，可惜很难实现自阴影
+
+原理是，将普通Relief中的二分搜索用几何求交算法代替，不再需要用循环反复采样了。
+
+<img src="./img/v2-c1ab9e3228b91a734285ef1dbd6649bd_r.jpg" alt="v2-c1ab9e3228b91a734285ef1dbd6649bd_r" style="zoom:50%;" />
+
+
+
+```glsl
+float2 SecantMethodReliefMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), float2 inddx,
+    float2 inddy, int channel, float2 uv, float3 viewDirTS, float2 offsetScale, float slicesMin, float slicesMax)
+{
+    // The number of slices depends on VdotN (view angle smaller, slices smaller).
+    int slicesNum = ceil(lerp(slicesMax, slicesMin, abs(dot(float3(0, 0, 1), viewDirTS))));
+    float deltaHeight = 1.0 * rcp(slicesNum);
+    float2 deltaUV = offsetScale.y * viewDirTS.xy * rcp(viewDirTS.z * slicesNum);
+    
+    float prevHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv, inddx, inddy)[channel];
+    float2 currUVOffset = -deltaUV;
+    float currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    float rayHeight = 1.0 - deltaHeight;
+    
+    // Linear search
+    for (int sliceIndex = 0; sliceIndex < slicesNum; sliceIndex++)
+    {
+        if (currHeight > rayHeight)
+            break;
+        prevHeight = currHeight;
+        rayHeight -= deltaHeight;
+        currUVOffset -= deltaUV;
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+    }
+    float pt0 = rayHeight + deltaHeight;
+    float pt1 = rayHeight;
+    float delta0 = pt0 - prevHeight;
+    float delta1 = pt1 - currHeight;
+    float delta;
+    // Secant method to affine the search
+    // Ref: Faster Relief Mapping Using the Secant Method - Eric Risser
+    for (int i = 0; i < 3; ++i)
+    {
+        // intersectionHeight is the height [0..1] for the intersection between view ray and heightfield line
+        float intersectionHeight = (pt0 * delta1 - pt1 * delta0) / (delta1 - delta0);
+        // Retrieve offset require to find this intersectionHeight
+        currUVOffset = -(1 - intersectionHeight) * deltaUV * slicesNum;
+        currHeight = SAMPLE_TEXTURE2D_GRAD(heightMap, sampler_heightMap, uv + currUVOffset, inddx, inddy)[channel];
+        delta = intersectionHeight - currHeight;
+        if (abs(delta) <= 0.01)
+            break;
+        // intersectionHeight < currHeight => new lower bounds
+        if (delta < 0.0)
+        {
+            delta1 = delta;
+            pt1 = intersectionHeight;
+        }
+        else
+        {
+            delta0 = delta;
+            pt0 = intersectionHeight;
+        }
+    }
+    float2 parallaxUV = uv + currUVOffset;
+    return parallaxUV;
+}
+```
+
+
 
 
 
@@ -1185,17 +1321,17 @@ Rect destViewport; //视口大小数据
 
 #### 抗锯齿算法
 
-##### 时域抗锯齿
+##### 时域抗锯齿（TAA）
 
+它通过结合多帧渲染的结果来减少图像中的锯齿和闪烁效应。TAA是一种基于时域的解决方案，通过对连续帧之间的像素信息进行分析和融合来实现抗锯齿效果。
 
+##### 快速抗锯齿（FXAA）
 
-##### 快速抗锯齿
+快速近似抗锯齿是一种基于后处理的抗锯齿算法。它通过在最终渲染图像上应用滤波器来减少锯齿和边缘伪影。FXAA的优点是简单快速，对于实时渲染具有较低的计算开销。
 
+##### 多重采样抗锯齿（MSAA）
 
-
-##### 多重采样抗锯齿
-
-
+它通过在每个像素上进行多个样本的采样来减少[锯齿效应](https://zhida.zhihu.com/search?content_id=230192640&content_type=Article&match_order=2&q=锯齿效应&zhida_source=entity)。每个样本都有自己的颜色和深度值，然后根据这些样本进行合成得到最终的像素颜色。多样本抗锯齿能够提供较好的图像质量，减少锯齿和边缘伪影。
 
 #### 体积光
 

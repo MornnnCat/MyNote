@@ -318,6 +318,10 @@ $$
 
 常用纹理滤波：邻近点采样滤波（Nearest Point Sampling）、双线性滤波（Bilinear）、三线性滤波（Trilinear）、各向异性滤波（Anisotropic Filtering）
 
+### Mipmap
+
+
+
 
 
 ## 沃雷噪点
