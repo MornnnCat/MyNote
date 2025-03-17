@@ -1243,7 +1243,7 @@ float2 SecantMethodReliefMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), 
 
 
 
-### **URP RenderFeature**
+### URP RenderFeature
 
 RenderFeature是属于渲染管线的一部分，基于其封装性，很难用其他继承的脚本去访问和控制，即使能访问到也会对其产生一些破坏，不建议访问。
 
@@ -1345,13 +1345,163 @@ Rect destViewport; //视口大小数据
 
 
 
+
+
+
+
+### HDRP  Custom Pass
+
+#### 官方示例：灰度后处理
+
+1. 创建一个 **C# 自定义后期处理**文件（在 Assets 文件夹中单击鼠标右键：**Create** **> Rendering** > **HDRP C# Post Process Volume**）并将其命名为 **GrayScale**。
+
+**注意**：由于 Unity 中序列化的工作原理，文件名和类名必须相同，否则 Unity 无法正确序列化它。
+
+1. 将 [灰度 C# 脚本 部分](https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@13.1/manual/Custom-Post-Process.html#CSharp)的示例代码复制到**你的C#后期处理体积**中。
+2. 创建一个全屏后期处理着色器（在 Assets 文件夹中单击鼠标右键：**Create** **> Shader** > **HDRP** > **Post Process**），并将其命名为 **GrayScale**。
+3. 将 [GrayScale Shader 部分中](https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@13.1/manual/Custom-Post-Process.html#Shader)的示例代码复制到您的后处理 Shader 中。
+4. 将 **GrayScale** 效果添加到项目执行的自定义后期处理列表中。为此，请转到 **Edit** > **Project Settings** > **HDRP 默认设置**，然后在 **After Post Process** 列表底部单击 **+** 并选择 **GrayScale**。
+5. 现在，您可以将 **GrayScale** 后期处理覆盖添加到场景中的 **Volumes**。要更改效果设置，请单击折叠箭头正下方的 **all** 小文本，然后使用 **Intensity** 滑块进行调整。
+6. （可选）您可以为后期处理效果创建自定义编辑器。有关如何执行此作的信息，请参阅[自定义编辑器](https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@13.1/manual/Custom-Post-Process.html#CustomEditor)。
+
+灰度C#脚本pass：
+
+这是 C# 自定义后处理文件。自定义后处理效果将配置数据和逻辑存储在同一个类中。若要创建效果的设置，可以使用从 [VolumeParameter](https://docs.unity3d.com/Packages/com.unity.render-pipelines.core@latest/index.html?subfolder=/api/UnityEngine.Rendering.VolumeParameter-1.html) 继承的预先存在的类，或者，如果要使用预先存在的类不包含的属性，请创建从 VolumeParameter 继承的新类.
+
+```c#
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
+using System;
+
+[Serializable, VolumeComponentMenu("Post-processing/Custom/GrayScale")]
+public sealed class GrayScale : CustomPostProcessVolumeComponent, IPostProcessComponent
+{
+    [Tooltip("Controls the intensity of the effect.")]
+    public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
+
+    Material m_Material;
+
+    public bool IsActive() => m_Material != null && intensity.value > 0f;
+
+    public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
+
+    public override void Setup()
+    {
+        if (Shader.Find("Hidden/Shader/GrayScale") != null)
+            m_Material = new Material(Shader.Find("Hidden/Shader/GrayScale"));
+    }
+
+    public override void Render(CommandBuffer cmd, HDCamera camera, RTHandle source, RTHandle destination)
+    {
+        if (m_Material == null)
+            return;
+
+        m_Material.SetFloat("_Intensity", intensity.value);
+        cmd.Blit(source, destination, m_Material, 0);
+    }
+
+    public override void Cleanup() => CoreUtils.Destroy(m_Material);
+
+}
+```
+
+着色器：
+
+```glsl
+Shader "Hidden/Shader/GrayScale"
+{
+    Properties
+    {
+        // This property is necessary to make the CommandBuffer.Blit bind the source texture to _MainTex
+        _MainTex("Main Texture", 2DArray) = "grey" {}
+    }
+
+    HLSLINCLUDE
+
+    #pragma target 4.5
+    #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/FXAA.hlsl"
+    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/RTUpscale.hlsl"
+
+    struct Attributes
+    {
+        uint vertexID : SV_VertexID;
+        UNITY_VERTEX_INPUT_INSTANCE_ID
+    };
+
+    struct Varyings
+    {
+        float4 positionCS : SV_POSITION;
+        float2 texcoord   : TEXCOORD0;
+        UNITY_VERTEX_OUTPUT_STEREO
+
+    };
+
+    Varyings Vert(Attributes input)
+    {
+        Varyings output;
+
+        UNITY_SETUP_INSTANCE_ID(input);
+        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+        output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
+        output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
+
+        return output;
+    }
+
+    // List of properties to control your post process effect
+    float _Intensity;
+    TEXTURE2D_X(_MainTex);
+
+    float4 CustomPostProcess(Varyings input) : SV_Target
+    {
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
+        float3 sourceColor = SAMPLE_TEXTURE2D_X(_MainTex, s_linear_clamp_sampler, input.texcoord).xyz;
+
+        // Apply greyscale effect
+        float3 color = lerp(sourceColor, Luminance(sourceColor), _Intensity);
+
+        return float4(color, 1);
+    }
+
+    ENDHLSL
+
+    SubShader
+    {
+        Pass
+        {
+            Name "GrayScale"
+
+            ZWrite Off
+            ZTest Always
+            Blend Off
+            Cull Off
+
+            HLSLPROGRAM
+                #pragma fragment CustomPostProcess
+                #pragma vertex Vert
+            ENDHLSL
+        }
+    }
+
+    Fallback Off
+}
+```
+
+
+
+
+
+
+
 ### 高级效果
-
-
-
-
-
-
 
 
 
