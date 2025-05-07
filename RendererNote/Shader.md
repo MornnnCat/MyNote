@@ -925,11 +925,78 @@ multi_compile建议用于声明可能实时切换的全局keyword声明组，例
 
 
 
+#### HDRP Shader模板
 
+```glsl
+Shader "HDRP/SimpleShader"
+{
+    Properties
+    {
+        _MainTex ("Texture", 2D) = "white" {}
+    }
 
+    SubShader
+    {
+        Tags
+        {
+            "RenderPipeline" = "HDRenderPipeline"
+            "RenderType" = "Opaque"
+            "Queue" = "Geometry"
+        }
 
+        Pass
+        {
+            Name "Forward"
+            Tags { "LightMode" = "ForwardOnly" }
 
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+            #pragma vertex vert
+            #pragma fragment frag
 
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float2 uv : TEXCOORD0;
+                float4 positionCS : SV_POSITION;
+            };
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+            float4 _MainTex_ST;
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.positionCS = TransformObjectToHClip(v.vertex.xyz);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                return o;
+            }
+
+            float4 frag(v2f i) : SV_Target
+            {
+                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+            }
+            ENDHLSL
+        }
+    }
+}
+```
+
+# 小东西
+
+```
+half2 screenPos = i.positionCS.xy/_ScreenParams.xy;
+```
 
 ## 具体效果
 
