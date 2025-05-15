@@ -609,21 +609,21 @@ public class SceneShaderCleaner : MonoBehaviour
 
 1. 创建 GameObject，挂上 `SceneShaderCleaner` 脚本：
 
-```text
+```c#
 // 示例调用
 SceneShaderCleaner.Instance.SwitchScene("BattleScene", "MainMenu");
 ```
 
 2. 如果你使用 AssetBundle：
 
-```text
+```c#
 AssetBundle bundle = AssetBundle.LoadFromFile(path);
 SceneShaderCleaner.Instance.RegisterAssetBundle(bundle);
 ```
 
 然后切场景前调用：
 
-```text
+```c#
 SceneShaderCleaner.Instance.UnloadAllAssetBundles();
 ```
 
