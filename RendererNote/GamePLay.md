@@ -2,6 +2,7 @@
 typora-copy-images-to: img\GamePlay
 ---
 
+# 游戏机制
 ## 设计剖析
 
 
@@ -50,7 +51,7 @@ typora-copy-images-to: img\GamePlay
 
 
 
-### game jam：和自己斗智斗勇
+### 和自己斗智斗勇
 
 横板跳跃，场景中存在多种对立单位，玩家操控其中一种，并需要达成本关目标才能通关；
 
@@ -58,7 +59,7 @@ typora-copy-images-to: img\GamePlay
 
 
 
-### game jam：窗口玩法
+### 窗口玩法
 
 通过一些API创建多个窗口，通过windows窗口的一些特性，对窗口内的游戏对象产生影响，进而达成关卡目的。
 
@@ -131,3 +132,23 @@ typora-copy-images-to: img\GamePlay
 4. 魔法阵管理类：MagicCircle_Manager
 
 ​	挂载在魔法阵的GameObject上，是“若干魔法阵类”的实例化
+
+
+
+# 游戏剧情
+
+
+
+## 角色塑造
+
+
+
+功能性角色：角色内核简单
+
+如何杀死一个主要角色？
+
+1. 角色内心有某种极度的纯粹；
+2. 现实与环境容不下这份纯粹；
+3. 放任角色生活在笔下，任他挣扎，任他努力，他的纯粹会自然而然地杀死他；
+4. 使他的死亡，映射他的辉煌与执着。
+
