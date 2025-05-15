@@ -8,31 +8,31 @@ typora-copy-images-to: img
 
 渲染分为3个阶段 应用阶段 几何阶段 光栅化阶段 
 
- 
-
-应用阶段：由CPU处理。把视野外的物体剔除掉,然后设置要渲染的状态（材质纹理、纹理、Shader等），然后把图元（点、线、三角面）装载到显存。
-
-几何阶段：由GPU处理。处理传来的顶点和三角面。这个阶段重要任务就是把模型坐标转换到屏幕坐标。这一阶段会输出屏幕空间的二维顶点坐标、顶点的深度值、颜色等相关属性。
-
-光栅化阶段：由GPU处理。图元所包含的像素进行处理。然后哪些像素要被输出到屏幕上。
-
- 
-
-顶点数据->顶点着色器->曲面细分->几何处理->裁剪->屏幕映射->三角形设置->三角形遍历->片元着色器->逐片元操作->打印屏幕图像
-
-顶点着色器：可完全编程。最主要的是把模型空间的位置转换到裁剪空间。同时处理顶点颜色。
-
-曲面细分：可完全编程。这个阶段细分图元用的。比如实现LOD效果，加顶点实现更细节的动画，用低模加细分在运行的时候实现高模效果。
-
-几何着色器。是完全可编程的。在顶点着色器阶段我们不能得知顶点和顶点的关系，但是在几何着色器可以。几何着色器主要是添加或者减少图元。
+ 顶点数据->顶点着色器->曲面细分->几何处理->裁剪->屏幕映射->三角形设置->三角形遍历->片元着色器->逐片元操作->打印屏幕图像
 
 空间变换：模型空间->世界空间->观察空间->裁剪空间->屏幕空间
 
+> 应用阶段：由CPU处理。把视野外的物体剔除掉,然后设置要渲染的状态（材质纹理、纹理、Shader等），然后把图元（点、线、三角面）装载到显存。
+>
+> 几何阶段：由GPU处理。处理传来的顶点和三角面。这个阶段重要任务就是把模型坐标转换到屏幕坐标。这一阶段会输出屏幕空间的二维顶点坐标、顶点的深度值、颜色等相关属性。
+>
+> 光栅化阶段：由GPU处理。图元所包含的像素进行处理。然后哪些像素要被输出到屏幕上。
+
+
+
+> 顶点着色器：可完全编程。最主要的是把模型空间的位置转换到裁剪空间。同时处理顶点颜色。
+>
+> 曲面细分：可完全编程。这个阶段细分图元用的。比如实现LOD效果，加顶点实现更细节的动画，用低模加细分在运行的时候实现高模效果。
+>
+> 几何着色器。是完全可编程的。在顶点着色器阶段我们不能得知顶点和顶点的关系，但是在几何着色器可以。几何着色器主要是添加或者减少图元。
+
+
+
  
 
-HDR和SDR的区别
+**HDR和SDR的区别**
 
-概念不同，HDR是指高动态范围图像，SDR是指标准动态范围图像；||亮度范围表现不同，HDR比SDR有更大更亮的数据存储；||图像细节表现不同，HDR技术可以在使图像在明暗之间获取更多的细节表现。
+> 概念不同，HDR是指高动态范围图像，SDR是指标准动态范围图像；||亮度范围表现不同，HDR比SDR有更大更亮的数据存储；||图像细节表现不同，HDR技术可以在使图像在明暗之间获取更多的细节表现。
 
 ### 着色器
 
@@ -241,11 +241,11 @@ Fallback "VertexLit" //最后一条后路 SubShader全不支持 运行指定的S
 
 1. TESS Control  Shader （D3D11 叫Hull shader），简称TCS。
 
-细分控制着色器，输入Patch，一个Patch可以看成多个顶点的集合，包括坐标、颜色、纹理坐标等等
-
-输出Patch ， gl_TessLevelOuter ， gl_TessLevelInner，后两者用于存储**把三角形的每条边分割成几段以及内部怎么继续分割**的信息。
-
- *使用TCS时，glBegin函数的参数必须是GL_PATCHES，而不是以前那种传统的图元（点，线，三角形等）。 glPatchParameteri可以指定每个Patch包含几个顶点。在VS与TCS直接有个图元装配的过程，它就是把VS输出的顶点封装一个Patch，然后传给TCS。
+> 细分控制着色器，输入Patch，一个Patch可以看成多个顶点的集合，包括坐标、颜色、纹理坐标等等
+>
+> 输出Patch ， gl_TessLevelOuter ， gl_TessLevelInner，后两者用于存储**把三角形的每条边分割成几段以及内部怎么继续分割**的信息。
+>
+>  *使用TCS时，glBegin函数的参数必须是GL_PATCHES，而不是以前那种传统的图元（点，线，三角形等）。 glPatchParameteri可以指定每个Patch包含几个顶点。在VS与TCS直接有个图元装配的过程，它就是把VS输出的顶点封装一个Patch，然后传给TCS。
 
 ```
 #pragma hull hs
@@ -284,31 +284,33 @@ struct UnityTessellationFactors {
 #endif
 ```
 
-参数用法：
 
-Tessellation factor = x 即该边出现(x-1)个细分点，被细分为x段。
 
-Inside Tessellation factor = x 若x为偶数则本三角中心出现一个细分三角，反之则无.
+**参数用法**：
 
-[UNITY_patchconstantfunc("hsconst")]定义声明好了，Tessellation factor确定后，由于是float，所以下一步需要决定如何对factor进行舍入。
-
-[UNITY_partitioning("fractional_odd")]决定浮点数的舍入规则，fractional_odd、equal_spacing、even_spacing
-
-在hull shader根据UnityTessellationFactors进行细分后，每个细分顶点都会有一个SV_DomainLacation，一组重心坐标。
+> Tessellation factor = x 即该边出现(x-1)个细分点，被细分为x段。
+>
+> Inside Tessellation factor = x 若x为偶数则本三角中心出现一个细分三角，反之则无.
+>
+> [UNITY_patchconstantfunc("hsconst")]定义声明好了，Tessellation factor确定后，由于是float，所以下一步需要决定如何对factor进行舍入。
+>
+> [UNITY_partitioning("fractional_odd")]决定浮点数的舍入规则，fractional_odd、equal_spacing、even_spacing
+>
+> 在hull shader根据UnityTessellationFactors进行细分后，每个细分顶点都会有一个SV_DomainLacation，一组重心坐标。
 
 
 
 2. TESS Evaluation Shader （D3D叫Domain shader），简称TES
 
-输入：一系列顶点
-
-下面的代码用于说明输入的信息，这一段表示输入三角形，每个TES程序都有它
-
-layout( triangles, fractional_odd_spacing, ccw ) in;
-
-输出：一系列顶点
-
-TCS->TES之间有个过程叫Tessellation Primitive Generator（简称TGP），用于**将TCS输出的Patch转换成若干三角形**，TES后有一个图元装配的过程，可以把"一系列顶点"转换成图元。
+> 输入：一系列顶点
+>
+> 下面的代码用于说明输入的信息，这一段表示输入三角形，每个TES程序都有它
+>
+> layout( triangles, fractional_odd_spacing, ccw ) in;
+>
+> 输出：一系列顶点
+>
+> TCS->TES之间有个过程叫Tessellation Primitive Generator（简称TGP），用于**将TCS输出的Patch转换成若干三角形**，TES后有一个图元装配的过程，可以把"一系列顶点"转换成图元。
 
 ```
 #pragma domain ds
@@ -1286,11 +1288,103 @@ float2 SecantMethodReliefMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), 
 
 #### 三向映射
 
+基础功能：
 
+``` 
+half2 yUV = i.worldPos.xz；
+half2 xUV = i.worldPos.zy；
+half2 zUV = i.worldPos.xy；
+half3 yDiff = tex2D(_AlbedoMap, yUV);
+half3 xDiff = tex2D(_AlbedoMap, xUV);
+half3 zDiff = tex2D(_AlbedoMap, zUV);
+```
 
+用世界空间坐标分别制作UV并分别采样，相当于将贴图分别平铺在世界空间中。
 
+```
+half3 blendWeights = pow(abs(i.worldNormal), _TriplanarBlendSharpness);
+```
+
+制作混合参数，对世界法线做绝对值，使所有法线指向世界坐标正方向；控制其指数，可以控制混合曲线；
+
+```
+blendWeights = blendWeights / (blendWeights.x + blendWeights.y + blendWeights.z);
+```
+
+使法线映射至(0,1)中，并使X+Y+Z=1；
+
+```
+fixed4 col = fixed4(xDiff * blendWeights.x + yDiff * blendWeights.y + zDiff * blendWeights.z, 1.0);
+```
+
+进行混合，法线和一个面夹角越接近90°则这个面的贴图越清晰。
+
+ 
+
+附加功能：
+
+1. UV控制：
+
+   ```
+   yUV.x = yUV.x * _AlbedoMap_ST.x + _AlbedoMap_ST.z;
+   yUV.y = yUV.y * _AlbedoMap_ST.y + _AlbedoMap_ST.w;
+   xUV.x = xUV.x * _AlbedoMap_ST.x + _AlbedoMap_ST.z;
+   xUV.y = xUV.y * _AlbedoMap_ST.y + _AlbedoMap_ST.w;
+   zUV.x = zUV.x * _AlbedoMap_ST.x + _AlbedoMap_ST.z;
+   zUV.y = zUV.y * _AlbedoMap_ST.y + _AlbedoMap_ST.w;
+   ```
+
+2. 其他混合算法：
+
+![image-20250515231407601](img/image-20250515231407601.png)
 
 #### 广告牌
+
+广告牌技术(Billborading)：使物体某个面始终正对着摄像机，既然如此 算法核心就是构建变换矩阵，一个变换矩阵需要三个基向量，广告牌通常使用表面法线、指向上的方向、指向右的方向，以及一个锚点。
+
+**Screen-Aligned Billboard 对齐屏幕的公告牌**
+
+> 最简单的是屏幕对齐的广告牌。这种形式与二维精灵是一样的，因为图像总是平行于屏幕，并且有一个恒定的向上向量。摄像机将物体呈现到与远近平面平行的视图平面上。对于这种类型的广告牌，所需的物体表面法线是视图平面法线的相反方向，其中视图平面的法线n指向远离视图位置的方向。向上的向量up来自相机本身，这定义了相机的向上方向。这两个向量已经垂直了，所以只需要“正确”的向右向量r就可以形成广告牌的旋转矩阵。因为n和up是相机的常数，所以将该旋转矩阵用于场景中所有的公告牌。常用与粒子系统或总是面向屏幕的文本。
+
+```
+output.pos = mul(UNITY_MATRIX_P, 
+    mul(UNITY_MATRIX_MV, float4(0.0, 0.0, 0.0, 1.0))
+        + float4(input.vertex.x, input.vertex.y, 0.0, 0.0)
+        * float4(_ScaleX, _ScaleY, 1.0, 1.0));
+```
+
+
+
+用UNITY_MATRIX_MV把模型空间原点(0,0,0,1)转换到观察空间，
+
+观察空间本质是一个世界空间的旋转版本，它的xy平面始终平行于观察面，
+
+最后，UNITY_MATRIX_P将顶点转换至裁剪空间。
+
+ 
+
+**World-Oriented Billboard 面向世界的公告牌**
+
+> 在屏幕对齐的广告牌中，当视角水平旋转时（摄像机以视线方向为轴旋转），公告牌将会在世界空间一起旋转从而保持在视图中的固定不变，然而公告牌这种行为有时候是违反世界规律的，如摄像机水平旋转，天空中的云本不应该会水平旋转，然而为了保持与屏幕对齐它会水平旋转甚至转至上下颠倒（若此时相机正在倒立观看的话）。这时候，就要将原先向上的向量由相机本身的向上向量变为世界空间下的向上向量，再用这个向上向量与物体法向（与视线方向相反且平行）叉乘求得向右向量，最后用物体法向与该向右向量叉乘求得物体最终准确的向上向量，完成新的坐标系的重建
+>
+> 最后所得的旋转矩阵为 M = （ r，u'，n ) ，全程在物体空间下变换。
+>
+> 有时在FOV（file of view）较大时，由于投影矩阵的作用，离视轴较远（既靠近视图边缘）的真实物体（既非公告牌）会有些明显拉伸畸形，而由于公告牌始终平行视平面，无论处于视图哪个位置都不会有畸形或形变，看起来有时反物理，有点假。此时若想刻意表现这种畸形效果（这种畸形并不是坏处，有时能增强表现力），就要用到Viewpoint-oriented的方法来代替原先Screen-Aligned 的方法。此时，原先物体表面法向由原来的与视平面法向平行变成从物体中心指向相机位置。Viewpoint-oriented Billboard用和真实物体变换到视平面相同的变换方式来变换图片，所以最后公告牌会出现上述描绘真实物体那样的畸形。
+
+
+
+**Axial Billboard 轴向公告牌**
+
+> 有些公告牌并不直接面向观察者，而是绕着世界空间某个固定的轴旋转并尽可能的面向观察者，如渲染远处的树木，树是一个公告牌面片，树干朝向固定为世界坐标的向上方向，树面片以树干为轴旋转，若玩家俯视树就会发现树只是个垂直于地平面的面片，此时若为树增加一个横截面面片（无公告牌效果）与地平面平行，可以减少俯瞰时的违和感。
+
+```
+Float3 horizontal= UNITY_MATRIX_V[1].xyz * _HorizontalCtrl+float3(0,1,0) * (1-_HorizontalCtrl);
+Float3x3 BillboardMatrix={
+UNITY_MATRIX_V[0].xyz,
+horizontal,
+UNITY_MATRIX_V[2].xyz};
+v.vertex.rgb= mul(v.vertex.rgb,BillboardMatrix);
+```
 
 
 
@@ -1298,13 +1392,180 @@ float2 SecantMethodReliefMapping(TEXTURE2D_PARAM(heightMap, sampler_heightMap), 
 
 #### 卡通水
 
+本效果实现大致分为两个大目标：
+
+1. 模拟水的深度渐变
+
+​	既然是模拟水的深度，那我们就可以采用基于深度着色的方法来实现，最后对不同深度值进行边界控制，分配颜色就行了
+
+2. 白色波浪
+
+​	首先很容易想到的是噪声图，对灰度值进行边界处理，加上UV动画
+
+**Shader关键变量设置**：
+
+> _DepthGradientShallow ：浅层梯度颜色值_
+>
+> DepthGradientDeep ：深层梯度颜色值
+> 
+> _DepthMaxDistance ：梯度值系数
+> 
+> _FoamColor ：泛光颜色
+> 
+> _SurfaceNoise ：泛光形状噪声图
+> 
+> _SurfaceNoiseScroll ：泛光漂流速度
+> 
+> _SurfaceNoiseCutoff ：泛光剪切系数
+> 
+> _SurfaceDistortion ：泛光扭曲噪声图
+> 
+> _SurfaceDistortionAmount ：扭曲系数
+> 
+> _FoamMaxDistance
+> 
+> _FoamMinDistance控制泛光面积 (不好用待修改)
+
+相关函数、宏、语义：
+
+ 
+
+标签："Queue" = "Transparent" 透明的
+
+语义：
+
+- Blend SrcAlpha OneMinusSrcAlpha正常混合(透明度混合)
+- ZWrite Off关闭深度写入
+
+
+关于shader混合效果拓展知识：
+
+https://blog.csdn.net/wdsdsdsds/article/details/52535352
+
+ 
+
+宏定义 ：#define SMOOTHSTEP_AA 0.01 定义常数SMOOTHSTEP_AA为0.01
+
+关于宏定义的拓展：
+
+http://m.biancheng.net/view/187.html
+
+可以看到思路是两层颜色进行透明度混合效果，而颜色值与透明值分开计算：
+
+```
+float3 color = (top.rgb * top.a) + (bottom.rgb * (1 - top.a));
+float alpha = top.a + bottom.a * (1 - top.a); 
+```
+
+顶点着色器：
+
+ComputeScreenPos返回齐次坐标下的屏幕坐标值，而非屏幕空间坐标。
+
+参数为裁剪空间坐标位置，因此常常如下使用该函数：
+
+```
+o.pos = UnityObjectToClipPos(v.vertex);
+o.screenPos = ComputeScreenPos(o.pos);
+```
 
 
 
+https://blog.csdn.net/linuxheik/article/details/86691117
 
-#### 模板测试
+ 
+
+```
+TRANSFORM_TEX:
+
+#define TRANSFORM_TEX(tex,name)
+
+ (tex.xy * name##_ST.xy + name##_ST.zw)
+
+//将模型顶点的uv和Tiling、Offset两个变量进行运算，计算出实际显示用的定点uv。
+
+ 
+
+COMPUTE_VIEW_NORMAL:
+
+#define COMPUTE_VIEW_NORMAL 
+
+normalize(mul((float3x3)UNITY_MATRIX_IT_MV, v.normal))
+```
+
+ 
+
+UNITY_MATRIX_IT_MV:模型*观察矩阵的逆转置矩阵
+
+即 将法线从模型空间转换至观察空间，
+
+而若是转换坐标则直接使用模型*观察矩阵，其原因如下链接文章解释：
+
+https://blog.csdn.net/cubesky/article/details/38682975
 
 
+
+片元着色器：
+
+使用tex2Dproj进行采样，
+
+二者唯一的区别是，在对纹理进行采样之前，tex2Dproj将输入的UV xy坐标除以其w坐标。这是将坐标从正交投影转换为透视投影。
+
+ 
+
+UNITY_PROJ_COORD ：预定义的着色器预处理器宏
+
+给定一个 4 分量矢量，此宏返回一个适合投影纹理读取的纹理坐标。在大多数平台上，它直接返回给定值。
+
+ 
+
+LinearEyeDepth ：将非线性转化为线性灰度图
+
+_CameraDepthTexture ：获取地面到摄像机的深度值，深度纹理是一种灰度图像，它根据物体与相机的距离给物体上色。在Unity中，离镜头越近的物体颜色越白，而离镜头越远的物体颜色越深。
+
+这个_CameraDepthTexture变量对所有着色器可用，但不是默认的;如果你在场景中选择Camera对象，你会注意到它附加了脚本CameraDepthTextureMode，它的其中一个字段设置为Depth。这个脚本指示相机将当前场景的深度纹理渲染到上面的着色器变量中。
+
+_Time_Time : 用来驱动shader内部的动画。我们可以用它来计算时间的变换。基于此可以在shader中实现各种动画效果。
+
+_Time各个分量的值如下：
+
+```
+_Time.x = time / 20
+_Time.y = time
+_Time.z = time * 2
+_Time.w = time * 3
+```
+
+本程序中我们调用了_Time.y以实现uv动画
+
+ 
+
+C#脚本：Camera Depth Texture Mode
+
+实现对屏幕空间的深度采样，输出一张全屏大小的Render Texture
+
+ NDC ：(Normalize Device Coordinate)归一化设备坐标
+
+x,y,z轴被映射至(1, -1)区间的坐标。
+
+深度图中的值在(0, 1)区间，所以通过d=0.5*ndc+0.5将坐标Z轴映射至(0, 1)，这个Z轴的信息即深度值。
+
+ 
+
+不会被深度图存储的条件：
+
+第一条：Queue = Transparent //透明
+
+第二条：没有被ShadowCaster通道，或者没有单独画进深度图的通道
+
+符合1或2条，就不会被计算存储到深度图中，对于自身带有ShadowCaster Pass或者FallBack中含有，并且Render Queue小于等于2500的渲染对象才会出现在深度纹理中
+
+ 
+
+UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);这段代码为声明_CameraDepthTexture
+
+深度纹理获取解析：
+
+https://www.cnblogs.com/zsb517/p/6655546.html
 
 
 
@@ -1418,7 +1679,7 @@ Rect destViewport; //视口大小数据
 
 ### HDRP  Custom Pass
 
-#### 官方示例：灰度后处理
+#### 灰度后处理
 
 1. 创建一个 **C# 自定义后期处理**文件（在 Assets 文件夹中单击鼠标右键：**Create** **> Rendering** > **HDRP C# Post Process Volume**）并将其命名为 **GrayScale**。
 

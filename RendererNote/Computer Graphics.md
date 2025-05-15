@@ -290,9 +290,133 @@ $$
 
 ## 渲染数学
 
-
-
 ### 四元数
+
+
+
+#### 概述
+
+四元数是负数的四维延伸，是简单的超复数。可以用于稳定的、经常性的(constant)的orientations(即旋转)插值，而这些在欧拉角中是很难实现的。
+
+**欧拉角**
+
+>欧拉角常用于飞行模拟：
+>绕右向量的旋转为pitch
+>绕上向量的旋转为yaw/heading
+>绕视方向向量旋转为roll/bank
+
+优点：
+>直观
+>需要最小储存：3个float
+>没有无效的欧拉角
+
+缺点：
+>给定朝向不唯一：0°、360°、720°都一样
+>欧拉角会遇到万象锁问题：
+
+**轴角对**
+
+缺点：
+
+>给定朝向不唯一：0°、360°、720°都一样
+
+#### 变换
+
+四元数变换
+
+单位四元数可以精简地表示任何三维旋转
+
+假设向量P: 
+$$
+P=(p_x,p_y,p_z,p_w)^T
+$$
+四元数q：
+$$
+q=(sin\theta u_q,cos\theta)
+$$
+而p绕u_q旋转2θ弧度为：
+$$
+qpq^{-1}
+$$
+两个四元数的连接，q、r均为单元四元数: 
+$$
+r(qpq^{-1})r^{-1}=rqpq^*r^*=(rp)p(rp)^*=cpc^*
+$$
+
+#### 推导
+
+超复数基础特性：
+$$
+i^2=j^2=k^2=ijk=-1\\
+ij=-jk=k\\
+ki=-ik=j\\
+jk=-kj=i
+$$
+![image-20250515234625969](img/image-20250515234625969.png)图注：红箭头指左乘i；绿箭头指左乘j；蓝箭头指左乘k。
+
+四元数三维旋转
+定义：v为一个点或向量，绕u旋转θ，得到v’
+
+证明：
+
+<img src="img/image-20250515234742944.png" alt="image-20250515234742944" style="zoom: 15%;" />
+
+<img src="img/image-20250515235112359.png" alt="image-20250515235112359" style="zoom:15%;" />
+
+结论：
+$$
+v'=(cos\frac{\theta}{2}+sin\frac{\theta}{2}u)v(cos\frac{\theta}{2}+sin\frac{\theta}{2}u)^2
+$$
+
+#### 运算
+
+定义：
+
+- [*w v*]
+- [*w (x y z)*]
+- w: 旋转角度
+- v: 旋转轴
+
+$$
+q=(q_v,q_w)=iq_x+jq_y+kq_z+q_w=q_v+q_w\\
+q_v为虚部，q_w为实部，i、j、k为虚数单位。
+$$
+
+下式为用于表示旋转的四元数：
+$$
+q=[cos\frac{\theta}{2},sin\frac{\theta}{2}v_{xyz}]
+$$
+共轭：
+$$
+q^*=(-q_v.q_w)=-iq_x-jq_y-kq_z+q_w\\
+(q^*)^*=q\\
+(q+r)^*=q^*+r^*\\
+(qr)^*=r^*q^*
+$$
+模：
+$$
+|q|=\sqrt{qq^*}=\sqrt{q*q}=\sqrt{q_x^2+q_y^2+q_z^2+q_w^2}\\
+|q|=|q^*|\\
+|qr|=|q||r|
+$$
+模为1的四元数被称为单元四元数：
+$$
+|q|=1\\
+q^{-1}=q^*
+$$
+由三角函数可推导出：
+$$
+q=(sin\theta u_q,cos\theta=e^{\theta u_q})=sin\theta u_q+cos\theta\\
+q=sin\theta u_q+cos\theta=e^{\theta u_q}
+$$
+对数和指数函数：
+$$
+log(q)=log(e^{\theta u_q})=\theta u_q\\
+q^t=e^{\theta tu_q}=cos(\theta t)+sin(\theta t)u_q
+$$
+
+
+------
 
 
 
