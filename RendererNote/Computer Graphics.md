@@ -504,3 +504,42 @@ Unity开启DLSS流程：
 
 ### 1. RayTracing Screen Space Reflection
 
+
+
+
+
+
+
+# 具体效果
+
+
+
+
+
+
+
+## 多人战争迷雾效果
+
+```
+public class VisualFieldObject : MonoBehaviour
+{
+    public int visualFieldRadius = 2;
+    private bool[,] inside;
+    private VisualFieldRecorder recorder;
+
+    public bool IsInside(Vector2Int coord)
+    {
+    }
+
+    private void OnEnable()
+    {
+    }
+
+    private void OnDisable()
+    {
+    }
+}
+```
+
+VisualFieldObject挂载在拥有视野的对象上，存储本单位的视野半径，并提供了一个判断是否在视野（正方形）范围内的公开方法。
+
