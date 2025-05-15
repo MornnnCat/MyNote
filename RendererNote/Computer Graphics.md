@@ -440,6 +440,193 @@ Mipmap大约会占用原图3/4的空间，关闭不必要的Mipmap，比如UI，
 
 #### Shader变体
 
+1.打包裁剪：
+
+```
+using UnityEditor;
+using UnityEngine;
+
+class CustomShaderStripper : IPreprocessShaders
+{
+    public int callbackOrder => 0;
+    public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
+    {
+        for (int i = data.Count - 1; i >= 0; i--)
+        {
+            if (data[i].shaderKeywordSet.IsEnabled(new ShaderKeyword(shader, "_DEBUG")))
+            {
+                data.RemoveAt(i);
+            }
+        }
+    }
+}
+```
+
+2.变体预热：
+
+```
+ShaderVariantCollection shaderVariants;
+void Start()
+{
+    shaderVariants.WarmUp(); // 预热变体
+}
+```
+
+3.减少变体分支，使用插值，典型的时间换空间
+
+4.减少Shader数量，避免重复功能被编译
+
+5.Project Settings → Graphics，禁用不必要的变体
+
+6.能用shader_feature就不要用multi_compile，能用shader_feature_local就不要用shader_feature
+
+7.使用变体检查工具
+
+Shader Variant Log Level： 设置为`Only Unity variants`或`All`，观察具体变体情况。
+ Shader Variant Collection 工具： 可视化管理和预热具体变体。
+
+
+
+##### Unity变体卸载机制
+
+| 情况                                                      |               是否卸载               |
+| :-------------------------------------------------------- | :----------------------------------: |
+| 被 Resources.Load 加载，手动 Resources.UnloadUnusedAssets |           会(前提：无引用)           |
+| 在 Scene 中挂载的材质使用 Shader                          |     不会(直到场景卸载并 GC 扫描)     |
+| 在 AssetBundle 中                                         |       会(通过卸载AB来卸载变体)       |
+| 在 ShaderVariantCollection 中预热过的变体                 | 不会(常驻内存直到进程结束或整包卸载) |
+
+*Shader变体卸载后仍会在内存中存有缓存，因此切换场景后可以释放内存中的变体缓存：
+
+```
+// 清理未引用的资源（包括 Shader）
+AsyncOperation op = Resources.UnloadUnusedAssets();
+//如果使用AB包，则使用：
+assetBundle.Unload(true); // true 表示卸载所有内容，包括 Shader
+
+//其他强制清理
+// 1. 卸载旧场景
+SceneManager.UnloadSceneAsync("OldScene");
+
+// 2. 手动触发 GC 和资源清理
+GC.Collect();
+Resources.UnloadUnusedAssets();
+
+// 3. 加载新场景
+SceneManager.LoadSceneAsync("NewScene");
+
+```
+
+
+
+**Unity 场景切换时自动清理 Shader 和变体缓存的工具脚本**
+
+```c#
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+public class SceneShaderCleaner : MonoBehaviour
+{
+    public static SceneShaderCleaner Instance;
+
+    // 当前加载的 AssetBundles（如果有的话）
+    private List<AssetBundle> loadedBundles = new List<AssetBundle>();
+
+    void Awake()
+    {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    /// <summary>
+    /// 切换场景并清理旧资源
+    /// </summary>
+    /// <param name="newSceneName">要加载的场景名</param>
+    /// <param name="oldSceneName">要卸载的旧场景名</param>
+    public void SwitchScene(string newSceneName, string oldSceneName = null)
+    {
+        StartCoroutine(DoSceneSwitch(newSceneName, oldSceneName));
+    }
+
+    private IEnumerator DoSceneSwitch(string newScene, string oldScene)
+    {
+        if (!string.IsNullOrEmpty(oldScene))
+        {
+            Debug.Log($"[SceneCleaner] 卸载旧场景：{oldScene}");
+            yield return SceneManager.UnloadSceneAsync(oldScene);
+        }
+
+        // 强制垃圾回收
+        Debug.Log("[SceneCleaner] GC.Collect()");
+        GC.Collect();
+
+        // 卸载未使用资源（包括 Shader / 材质等）
+        Debug.Log("[SceneCleaner] Resources.UnloadUnusedAssets()");
+        yield return Resources.UnloadUnusedAssets();
+
+        // 加载新场景
+        Debug.Log($"[SceneCleaner] 加载新场景：{newScene}");
+        yield return SceneManager.LoadSceneAsync(newScene, LoadSceneMode.Single);
+
+        Debug.Log("[SceneCleaner] 切换完成");
+    }
+
+    /// <summary>
+    /// 如果使用 AssetBundle，调用此方法注册它们，切换时可以卸载
+    /// </summary>
+    public void RegisterAssetBundle(AssetBundle bundle)
+    {
+        if (bundle != null && !loadedBundles.Contains(bundle))
+        {
+            loadedBundles.Add(bundle);
+        }
+    }
+
+    /// <summary>
+    /// 清理注册过的 AssetBundles
+    /// </summary>
+    public void UnloadAllAssetBundles()
+    {
+        foreach (var bundle in loadedBundles)
+        {
+            Debug.Log($"[SceneCleaner] 卸载 AssetBundle: {bundle.name}");
+            bundle.Unload(true); // true 表示卸载所有包含的资源
+        }
+        loadedBundles.Clear();
+    }
+}
+```
+
+**使用方法**
+
+1. 创建 GameObject，挂上 `SceneShaderCleaner` 脚本：
+
+```text
+// 示例调用
+SceneShaderCleaner.Instance.SwitchScene("BattleScene", "MainMenu");
+```
+
+2. 如果你使用 AssetBundle：
+
+```text
+AssetBundle bundle = AssetBundle.LoadFromFile(path);
+SceneShaderCleaner.Instance.RegisterAssetBundle(bundle);
+```
+
+然后切场景前调用：
+
+```text
+SceneShaderCleaner.Instance.UnloadAllAssetBundles();
+```
+
 
 
 ## AI优化
