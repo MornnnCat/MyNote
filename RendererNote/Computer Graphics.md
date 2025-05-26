@@ -852,5 +852,5 @@ public class VisualFieldObject : MonoBehaviour
 }
 ```
 
-VisualFieldObject挂载在拥有视野的对象上，存储本单位的视野半径，并提供了一个判断是否在视野（正方形）范围内的公开方法。
+VisualFieldObject.cs挂载在拥有视野的对象上，存储本单位的视野半径，并提供了一个判断是否在视野（正方形）范围内的公开方法。
 
