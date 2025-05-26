@@ -928,11 +928,6 @@ multi_compile建议用于声明可能实时切换的全局keyword声明组，例
 #### URP Shader模板
 
 ```glsl
-作者：晚三千
-链接：https://zhuanlan.zhihu.com/p/1905604851997603300
-来源：知乎
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
-
 Shader "Custom/MyCustomURPShader"
 {
     Properties
