@@ -2380,3 +2380,41 @@ compute shader要进行的裁切分为两部分：视锥体裁切、遮挡剔除
    类似于虚拟内存的概念，VT的核心思想便是尽可能只把需要用到的纹理内容加载到内存中。和[Texture Streaming](https://zhida.zhihu.com/search?content_id=242896378&content_type=Article&match_order=1&q=Texture+Streaming&zhida_source=entity)不一样的是，他不是仅仅以[Mip等级](https://zhida.zhihu.com/search?content_id=242896378&content_type=Article&match_order=1&q=Mip等级&zhida_source=entity)为粒度进行控制，而是将原始贴图切分成大小相同的Page，然后在运行时对所需要的Page发起请求。Page沿用了虚拟内存中页的概念，下文我们也互换地使用Tile来表示。请求完毕的Page会被映射到一个物理贴图（参考物理内存）中供实际的渲染使用。为了得知Page被映射到物理贴图中的哪个位置，我们还需要给shader额外提供一个页表（PageTable），来索引贴图实际的位置。物理贴图和页表的尺寸一般来说都远小于原始贴图，所以通过额外的采样和动态加载机制，我们节省了内存。
 
 ![image-20250626164123724](img/image-20250626164123724.png)
+
+## 材质连连看
+
+### 基本PBR材质
+
+总览：
+
+![image-20250705162341228](img/image-20250705162341228.png)
+
+
+
+基础色，UE的贴图和采样是合在一起的（TextureSample），还可以输入Mip等级，静态分支是用static switch，Base Color节点是用于便于整理，可以转接到最终输出节点上去。
+
+![image-20250705162408165](img/image-20250705162408165.png)
+
+**材质函数**：QMF_BaseColorAdjustments，是调节基础色饱和、亮度和对比度的功能，是可自定义的材质函数，相当于include文件。
+
+<img src="img/image-20250705162854227.png" alt="image-20250705162854227" style="zoom:50%;" />
+
+ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免进行多余的采样计算，每条都增加了静态分支。
+
+![image-20250705162423276](img/image-20250705162423276.png)
+
+**材质函数**：处理AO，粗糙度和金属度同理。
+
+<img src="img/image-20250705163916658.png" alt="image-20250705163916658" style="zoom:50%;" />
+
+法线贴图和置换贴图同理，不过置换贴图只有在开启曲面细分的时候才能启用.
+
+<img src="img/image-20250705164725195.png" alt="image-20250705164725195" style="zoom:50%;" />
+
+![image-20250705162438580](img/image-20250705162438580.png)
+
+
+
+这是uv坐标的scale和offset，UV的节点叫“TextureCoordinate”
+
+![image-20250705162455388](img/image-20250705162455388.png)
