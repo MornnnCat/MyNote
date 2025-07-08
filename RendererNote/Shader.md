@@ -2429,7 +2429,7 @@ Nanite只能进行一定限度内的三角面数量变化，不会做出能影�
 
 ### 基本PBR材质
 
-总览：
+#### 基本不透明材质
 
 ![image-20250705162341228](img/image-20250705162341228.png)
 
@@ -2463,7 +2463,13 @@ ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免�
 
 ![image-20250705162455388](img/image-20250705162455388.png)
 
-#### 透明
+#### 透明玻璃
+
+<img src="img/image-20250708192642088.png" alt="image-20250708192642088" style="zoom: 67%;" />
+
+
+
+
 
 
 
@@ -2508,3 +2514,27 @@ ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免�
 1. 视差映射以及法线扭曲模拟冰的折射；
 2. 冰的光照模型：次表面散射、光的反射、光的透射；
 3. 
+
+## CMD命令
+
+官方文档：https://dev.epicgames.com/documentation/zh-cn/unreal-engine/stat-commands-in-unreal-engine?application_version=5.0
+
+纹理流送池：
+
+​	Stat STREAMING
+
+​	ListTextures nonstreaming
+
+
+
+- **r.shadowquality** **0** 共有 0 到 5 六个等级，0 没有动态阴影，5 最高质量动态阴影。
+- **t.maxfps** 调整最大帧率。
+- **stat fps** 显示当前帧率。
+- **stat unit** 显示当前帧的渲染延迟，包括 game 、draw 、rhi 、 GPU 线程的延迟。
+- **stat + 任一线程名**可以查看更加细致的延迟。
+- **stat scenerendering** 显示不同的渲染命令所需的时间。
+- **freezerrendering** 冻结渲染，方便查看遮挡剔除情况，开启命令时会冻结当前帧的剔除。
+- **stat initviews** 提供有关遮挡相关的渲染结果，比如多少个对象被因为遮挡有隐藏，被视锥体隐藏等。
+- **stat LightRendering** 灯光耗时分析。
+- **r.VisualizeOccludedPrimitives** 1 开启可视化剔除。
+- **r.VisualizeOccludedPrimitives 0** 关闭可视化剔除。
