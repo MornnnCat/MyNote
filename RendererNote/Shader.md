@@ -2515,9 +2515,35 @@ ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免�
 2. 冰的光照模型：次表面散射、光的反射、光的透射；
 3. 
 
-## CMD命令
+## UE测试与优化
 
-官方文档：https://dev.epicgames.com/documentation/zh-cn/unreal-engine/stat-commands-in-unreal-engine?application_version=5.0
+### Unreal Insights Trace
+
+Timing Insights窗口
+
+
+
+![image-20250709162940733](img/image-20250709162940733.png)
+
+
+
+### Oodle压缩
+
+
+
+
+
+
+
+### PSO缓存
+
+Pipeline State Object，这是D3D12、Vulkan、Metal等现代图形API提供的一种特性，用于减少改变渲染状态时造成的性能下降
+
+
+
+### CMD命令
+
+官方文档：https://dev.epicgames.com/documentation/zh-cn/unreal-engine/stat-commands-in-unreal-engine?application_version=5.5
 
 纹理流送池：
 
@@ -2538,3 +2564,6 @@ ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免�
 - **stat LightRendering** 灯光耗时分析。
 - **r.VisualizeOccludedPrimitives** 1 开启可视化剔除。
 - **r.VisualizeOccludedPrimitives 0** 关闭可视化剔除。
+
+
+
