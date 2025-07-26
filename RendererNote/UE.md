@@ -201,3 +201,106 @@ Pipeline State Object，这是D3D12、Vulkan、Metal等现代图形API提供的�
 
 
 
+## C++
+
+
+
+### 基础操作与设置
+
+“Enable Live Coding”，实时编译对代码的更新
+
+<img src="img/image-20250726135935392.png" alt="image-20250726135935392" style="zoom:50%;" />
+
+vs2022快捷键：
+
+Ctrl+B：编译当前文件，只修改了当前文件的时候用这个就可以，编译的更快一些；
+
+Ctrl+Shift+B：编译项目
+
+
+
+主角色的控制、输入代码，模板案例会在此处重写一个C++类，使用一个蓝图类继承该C++类并放进这里，可以在蓝图中直观地修改一些暴漏的配置选项：
+
+<img src="img/image-20250726140115777.png" alt="image-20250726140115777" style="zoom:50%;" />
+
+在这修改默认IDE
+
+<img src="img/image-20250726141335224.png" alt="image-20250726141335224" style="zoom:50%;" />
+
+创建一个由我们控制的角色：
+
+1. 基于C++角色类来创建一个蓝图 BP PlayerCharacter；
+2. 创建基于GameMode的蓝图BP PlayerGameMode；
+3. 将BP PlayerGameMode设置为游戏的GameMode；
+4. 将BP PlayerGameMode的Default Pawn Class赋值为BP PlayerCharacter。
+
+
+
+**UPROPERTY**
+
+UPROPERTY是 Unreal Engine 中用于声明属性的宏，它用于标记某个属性是一个 Unreal Engine 托管的属性，并且可以在编辑器中进行访问和操作。
+UPROPERTY宏提供了一系列参数，用于定义属性的属性和行为，例如是否可编辑、是否可序列化等。
+
+
+
+类似于属性修饰符，部分常用UPROPERTY：
+
+1. EditAnywhere:允许在编辑器中编辑该属性；
+
+   示例：
+
+   头文件中声明
+   ```c++
+   protected:
+   UPROPERTY(EditAnywhere)
+   float test_VisibleAnywhere;
+   ```
+   <img src="img/image-20250726145427083.png" alt="image-20250726145427083" style="zoom:50%;" />
+
+
+2. EditDefaultsOnly:实例就不能修改了；
+
+3. BlueprintReadWrite:允许在蓝图(EventGraph)中读写该属性。
+
+4. VisibleAnywhere**:在编辑器中显示该属性，但不允许编辑。
+
+5. Transient:该属性不会被序列化保存，通常用于临时数据或不希望被保存的数据
+
+6. Category:指定在编辑器中显示的该属性所属的分类。
+
+7. meta:可以用来设置一些元数据，如文档、关键字等，meta=(AlowPrivateAccess="true")允许私有属性在编辑器中进行编辑。
+
+   …………
+   
+
+```c++
+protected:
+UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="XT|TEST001")
+float test_VisibleAnywhere;
+```
+
+<img src="img/image-20250726152925827.png" alt="image-20250726152925827" style="zoom:50%;" />
+
+```c++
+private:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="XT|TEST001", meta=(AllowPrivateAccess = "true"))
+    float test_VisibleAnywhere;
+```
+
+使用meta后，即便是私有变量，也可以从蓝图进行访问
+
+
+
+**UFUNCTION**
+
+UFUNCTION是 Unreal Engine 中用于声明函数的宏，它用于标记某个函数是-个 Unreal Engine 托管的函数，并且可以在编辑器中进行访问和操作。
+UFUNCTION宏提供了一系列参数，用于定义函数的属性和行为，例如是否是蓝图可调用的、是否可在网络中复制等。
+
+1. BlueprintCallable:允许在蓝图中调用该函数。
+2. BlueprintPure:声明该函数为纯函数，即不会修改对象的状态。
+3. BlueprintlmplementableEvent:声明该函数为蓝图可实现的事件，在蓝图中可以实现该事件的具体逻辑。
+4. Category:指定在编辑器中显示的该函数所属的分类。
+5. Meta:可以用来设置一些元数据，如文档、关键字等。
+6. Server**、Client、Reliable:用于网络功能，指定该函数在服务器端、客户端执行，以及指定该函数是否可靠传输。
+   …………
+
