@@ -41,13 +41,33 @@ Nanite只能进行一定限度内的三角面数量变化，不会做出能影�
 
 ​		草地、树叶、毛发（因为这种情况，LOD很难建立的很有效）
 
-
-
-
-
 问：一个3A游戏镜头中的cluster的数量非常多，这种数量的组下进行视锥体剔除和遮挡剔除，是如何做到剔除本身消耗的性能做的不错的地步的？
 
 
+
+
+
+### Lumen
+
+这是一套基于有向距离场光线追踪解决GI和反射的光照系统。
+
+Lumen 生成一个自动参数化的附近场景表面，称为  **Surface Cache**  **表面缓存**。它用于快速查找场景中光线击中点的光照。Lumen 从多个角度捕获每个网格的材料属性。这些捕获位置（称为  **Cards** ）是为每个网格离线生成的。
+
+cmd: r.Lumen.Visualize.CardPlacement 1
+查看当前场景的Surface Cache
+
+![image-20250729201752921](img/image-20250729201752921.png)
+
+静态网格体默认生成12张Cards，可以在静态网格体的设置界面的LOD 0->Build Settings->**Max Lumen Mesh Cards** 设置生成的Cards数量。
+
+![image-20250729204414380](img/image-20250729204414380.png)
+
+粉色区域是Lumen的Cards无法覆盖的区域，
+这种区域不会产生反射光线，一般是将模型拆成更简单的部件可以改善这个问题。
+
+也可以使用材质节点“**RayTracingQualitySwitchReplace**”，切换光追质量来提供缓存数据或优化复杂材质的表面缓存捕获。
+
+开启Nanite可以加速Lumen的表面缓存的生成
 
 
 
@@ -127,6 +147,15 @@ ORM三合一贴图，RGB通道分别为：AO、Roughness、Metallic，为避免�
 
 <img src="img/image-20250708143107847.png" alt="image-20250708143107847" style="zoom:80%;" />
 
+#### 皮肤材质
+
+UE材质自带有效果很不错的次表面散射功能，皮肤渲染中，选用“Subsurface Profile”，即次表面轮廓。
+
+开启次表面轮廓后，通过“Opacity”控制次表面散射度。
+我们使用ORST四合一贴图（AO、Roughness、Specular、Thickness），厚度图并不需要很高的精度，因此放在Alpha通道是没有问题的。
+
+![image-20250728212431559](img/image-20250728212431559.png)
+
 
 
 ### 物件渲染
@@ -181,9 +210,17 @@ Pipeline State Object，这是D3D12、Vulkan、Metal等现代图形API提供的�
 
 纹理流送池：
 
-​	Stat STREAMING
+​	**Stat STREAMING**
 
-​	ListTextures nonstreaming
+​	**ListTextures nonstreaming**
+
+
+
+解锁编辑器帧率上限144fps
+
+**t.maxFPS 144**
+
+
 
 
 
@@ -200,6 +237,20 @@ Pipeline State Object，这是D3D12、Vulkan、Metal等现代图形API提供的�
 - **r.VisualizeOccludedPrimitives 0** 关闭可视化剔除。
 
 
+
+### 图形设置
+
+**SkeletalMeshLODBias** 骨骼网格体的LOD等级偏移
+
+**ViewDistanceScale** 距离剔除
+
+**foliage.DensityScale** 植被密度
+
+**DistanceFieldAO** 有向距离场
+
+**Lumen.DiffuseIndirect.Allow** Lumen漫反射间接光
+
+**LumenScene.Radiosity.ProbeSpacing** Lumen
 
 ## C++
 
