@@ -74,7 +74,7 @@ typora-copy-images-to: img\GamePlay
 
 
 
-## 实现玩法机制
+## 头脑风暴
 
 
 
@@ -140,6 +140,8 @@ typora-copy-images-to: img\GamePlay
 
 ​	挂载在魔法阵的GameObject上，是“若干魔法阵类”的实例化
 
+------
+
 
 
 ### 大师之国
@@ -153,6 +155,14 @@ typora-copy-images-to: img\GamePlay
 但在此地，有一个群体例外，他们追求一个领域深层的构造，热衷于创造知识。
 
 ------
+
+### 扮演巨龙的玩法
+
+
+
+
+
+
 
 # 游戏设计师
 
