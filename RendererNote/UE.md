@@ -166,9 +166,28 @@ https://dev.epicgames.com/documentation/zh-cn/unreal-engine/using-retargeted-ani
 
 
 
-#### IK重定向
+#### IK
 
-IK(Inverse Kinematic)逆向动力学，与FK(Forward Kinematic)正向动力学相对，
+IK(Inverse Kinematic)逆向动力学，与FK(Forward Kinematic)正向动力学相对，是根据骨骼的终节点来推算其他父节点的位置的一种方法。比如通过手的位置推算手腕、胳膊肘的骨骼的位置。
+
+IK的优势在于需要精确控制手、脚位置的动作计算更方便，比如让脚实时贴合在地面和台阶上，比起为每种无法预测的状况单独制作动画，使用IK进行程序控制显然更方便。
+类似的例子还有：靠近墙的时候自动扶墙，眼睛旋转伴随脖子的旋转，
+
+
+
+**IK目标（IK Goal）和解算器**
+
+IK目标（IK Goal）和解算器是控制角色肢体末端位置和旋转的核心组件，它们协同工作以实现更自然的动画效果。
+
+1. 创建IK目标和解算器，点击层级（Hierarchy）面板中的 添加（+），然后选择 新建IK目标（New IK Goal） 。如果你的IK Rig尚无解算器，则将显示对话框窗口，你可以在其中选择要与新目标关联的解算器。IK最常用的是 Limb IK ，然后点击 确定（OK） 。
+2. IK目标有可调整的属性，主要用于调整IK动作和动画的混合程度
+   ![image-20250815205932117](img/image-20250815205932117.png)
+
+
+
+
+
+
 
 
 
