@@ -175,13 +175,71 @@ IK的优势在于需要精确控制手、脚位置的动作计算更方便，比
 
 
 
-**IK目标（IK Goal）和解算器**
+##### IK目标（IK Goal）和解算器
 
 IK目标（IK Goal）和解算器是控制角色肢体末端位置和旋转的核心组件，它们协同工作以实现更自然的动画效果。
 
-1. 创建IK目标和解算器，点击层级（Hierarchy）面板中的 添加（+），然后选择 新建IK目标（New IK Goal） 。如果你的IK Rig尚无解算器，则将显示对话框窗口，你可以在其中选择要与新目标关联的解算器。IK最常用的是 Limb IK ，然后点击 确定（OK） 。
+1. 创建IK目标和解算器，点击层级（Hierarchy）面板中的 添加（+），然后选择 新建IK目标（New IK Goal） 。如果你的IK Rig尚无解算器，则将显示对话框窗口，你可以在其中选择要与新目标关联的解算器。人体骨架的IK最常用的是肢体Limb IK ，然后点击 确定（OK） 。
 2. IK目标有可调整的属性，主要用于调整IK动作和动画的混合程度
    ![image-20250815205932117](img/image-20250815205932117.png)
+
+
+
+##### IK重定向两足标准角色
+
+虚幻引擎提供了灵活的工具，用于将动画从一个角色重定向到另一个角色。一种方法是IK Rig与IK重定向器结合使用，这样就可以重定向带有迥异的骨架层级和比例的角色。重定向动画可用于在多个不同骨架之间共享动画数据，而无需在虚幻引擎之外创建和管理新动画。
+
+1. 在为每个需要进行重定向的骨架创建IK Rig资产后，首先需要定义**根骨骼（Retarget Root）**，根骨骼一般是盆骨或臀部的骨骼，右击骨骼节点->Set Retarget Root；
+
+2. 然后需要定义**骨骼链（Retarget Chain）**，一个骨骼链条中的骨骼必须是首尾相接的单线链，创建过程中需要核对骨骼链的部位是否和其自动命名能对的上。
+   *创建链的时候也可以同时创建IK Goal和解算器，这个常用于解决重定向骨架之间动画不精准的问题，比如[快速栽植](https://dev.epicgames.com/documentation/zh-cn/unreal-engine/fix-foot-sliding-with-ik-retargeter-in-unreal-engine?application_version=5.5)、[步幅扭曲](https://dev.epicgames.com/documentation/zh-cn/unreal-engine/ik-rig-animation-retargeting-in-unreal-engine?application_version=5.5#全局设置)或 **混合到源**
+
+   <img src="img/image-20250818152109905.png" alt="image-20250818152109905" style="zoom:75%;" />
+
+| **头部（Head）**   | `head`                                                 |
+| ------------------ | ------------------------------------------------------ |
+| **颈部（Neck）**   | `neck`                                                 |
+| **腿部（Leg）**    | `leg` `hip` `thigh` `calf` `knee` `foot` `ankle` `toe` |
+| **手臂（Arm）**    | `arm` `clavicle` `shoulder` `elbow` `wrist` `hand`     |
+| **脊椎（Spine）**  | `spine`                                                |
+| **下颌（Jaw）**    | `jaw`                                                  |
+| **尾部（Tail）**   | `tail` `tentacle`                                      |
+| **拇指（Thumb）**  | `thumb`                                                |
+| **食指（Index）**  | `index`                                                |
+| **中指（Middle）** | `middle`                                               |
+| **无名指（Ring）** | `ring`                                                 |
+| **小指（Pinky）**  | `pinky`                                                |
+| **根骨骼（Root）** | `root`                                                 |
+
+3. 成功创建后右下角IK重定向属性面板会出现该骨骼链，可以在这里做修改与增删；
+   <img src="img/image-20250818154336384.png" alt="image-20250818154336384" style="zoom:67%;" />
+
+4. 接下来进行IK重定向，创建IK Retarget资产后并添加源Rig和目标Rig后，首先需要核对骨骼链映射，在Chain Mapping视图中查看，检查源骨架和目标骨架的重定向骨骼链映射是否正确。
+   <img src="img/image-20250818165635376.png" alt="image-20250818165635376" style="zoom:67%;" />
+5. 如果双方的基础姿势不同（T pose和A pose），则需要进行重定向姿势，在IK Retarget资产中的左上角点击“Running Retarget”，切换成“Editing Retarget Pose”模式，点击骨骼节点即可旋转该节点，进行姿势重定向。
+6. 一切就绪后，就可以在Asset Browser中预览动画了，如果效果可行，则可以点击该视图上方的“Export Selected Animations”，导出重定向后的动画序列资产。
+   
+7. 然而，如果重定向的两个骨架差距就过大，最后的动画效果可能还是会有一些瑕疵，或者想要加入一些更有特色的小动作，这就需要IK Goal与解算器进行调整，具体IK Goal和解算器添加过程参考上文**IK目标（IK Goal）和解算器**。
+8. IK Goal和解算器创建成功后回到Rig Retarget资产界面，点击角色脚下的圆环，即可在Details调整根骨骼的各项属性，以此挑战角色整体动作。
+   <img src="img/image-20250818195055877.png" alt="image-20250818195055877" style="zoom:50%;" />
+
+
+
+##### IK重定向配置文件
+
+用于控制全局骨架IK重定向的配置文件
+
+
+
+
+
+#### 功能
+
+
+
+##### Mixamo骨架到UE小白人重定向IK骨骼定向
+
+当类似Mixamo这类的骨架和小白人进行重定向时，因为IK骨骼没有对应的动画数据，因此导出的动画里小白人的IK骨骼不会随动画而动，这就会导致角色在实机播放动画时IK驱动的部位被定死在固定位置。
 
 
 
@@ -226,6 +284,16 @@ ChaosCloth不会对碰撞体数量做限制，但数量越多，效率也会越�
 在骨骼网格体界面可以看到
 
 ![image-20250807101504982](img/image-20250807101504982.png)
+
+
+
+
+
+
+
+
+
+
 
 
 
