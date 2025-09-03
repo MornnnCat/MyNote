@@ -107,6 +107,22 @@ UE5的GPU实例化已经实现了大多数基础功能，包括ZBuffer、GBuffer
 
 
 
+#### Mass AI
+
+这是一个UE5的内置插件，可以基于路径生成人群，人群渲染的精度要远超VAT+GPU Instance，自带有人群的寻路以及随机组合算法，一个NPC由多个部件组成，当然，性能上必然是比之不足的。
+
+首先，在Plugin里面打开Mass AI并重启，然后在场景中打开Zone Graph视图，以便看到路径。
+
+<img src="img/image-20250901201818054.png" alt="image-20250901201818054" style="zoom:50%;" />
+
+City Sample示例场景项目中有一个BP_MassCrowdSpawner蓝图，是人群生成的核心组件
+
+然后在场景中创建一个“Zone Shape”的组件，这个是人群路径组件，点“W”后单击中轴线可以编辑路径，按住Alt可以转弯。
+
+编辑好后，点击Build->Build ZoneGraph，烘好所需的数据，点击运行就可以看到人群了。
+
+但实际人群的性能并不好，在开启了明显很重的LOD后，仍然会导致150帧的空地掉到80帧。
+
 
 
 ### 骨骼 (Skeletal)
