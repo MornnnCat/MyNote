@@ -52,3 +52,28 @@ rules:
 ​    \- 'DOMAIN-SUFFIX,*.adobestats.io,REJECT'
 
 ​    \- 'DOMAIN-SUFFIX,ic.adobe.io,REJECT'
+
+
+
+# Rime-小狼毫
+
+文档：https://github.com/rime/home/wiki/CustomizationGuide
+
+git地址：https://github.com/rime/weasel
+
+雾凇拼音：https://github.com/iDvel/rime-ice
+
+雾凇拼音配置导入：
+
+1. 下载好小狼毫后进入用户文件夹
+
+2. 在用户文件夹中clone或pull雾凇拼音的最新词库
+   ```
+   git clone https://github.com/iDvel/rime-ice.git Rime --depth 1
+   
+   # 更新
+   cd Rime
+   git pull
+   ```
+
+   *注意需要将仓库的内容直接放置在用户文件夹下
