@@ -101,7 +101,15 @@ rules:
 
 ​    \- 'DOMAIN-SUFFIX,ic.adobe.io,REJECT'
 
+## win11关闭二级右键菜单
 
+cmd命令，前者为关闭二级菜单，后者为恢复。
+
+```cmd
+reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
+
+reg delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" /f
+```
 
 # Rime-小狼毫
 
