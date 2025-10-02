@@ -111,6 +111,24 @@ reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\Inpr
 reg delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" /f
 ```
 
+
+
+## 硬盘空白页面数据自动擦除
+
+开启Trim指令：fsutil behavior query DisableDeleteNotify
+
+或fsutil behavior set disabledeletenotify 0
+
+关闭Trim：fsutil behavior set disabledeletenotify 1
+
+
+
+硬盘测试：
+
+128k全盘顺序写两遍的命令行 fio --ioengine=windowsaio --direct=1 --thread --norandommap --filename="C:\fio_test1.file" --name=int_seq --output=int_seq.log --rw=write --bs=128k --numjobs=1 --iodepth=64 --loops=2 --size=1G 4小时4k随机写处理的命令行 fio --ioengine=windowsaio --direct=1 --thread --norandommap --filename=%USERPROFILE%\\fio_test.file --name=int_rand --output=int_rand.log --rw=randwrite --bs=4k --numjobs=4 --iodepth=128 --ramp_time=60 --runtime=14400 --time_based --group_reporting --size=16G
+
+
+
 # Rime-小狼毫
 
 文档：https://github.com/rime/home/wiki/CustomizationGuide
