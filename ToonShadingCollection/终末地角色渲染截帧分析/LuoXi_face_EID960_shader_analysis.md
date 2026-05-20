@@ -13,6 +13,8 @@
 | 上一个 / 下一个事件 | EID 952 / EID 965 |
 | 顶点着色器 | `ResourceId::40468`, entry `main` |
 | 片元着色器 | `ResourceId::40469`, entry `main` |
+| VS 反编译附录 | `doc/附录/LuoXi_face_EID960_vs_spirv.txt` |
+| PS 反编译附录 | `doc/附录/LuoXi_face_EID960_ps_spirv.txt` |
 | 输出 RT0 | `ResourceId::33297`, 2560x1440, `R11G11B10_FLOAT` |
 | 输出 RT1 | `ResourceId::33259`, 2560x1440, `R10G10B10A2_UNORM` |
 | 深度/模板 | `ResourceId::33254`, 2560x1440, `D32S8` |
